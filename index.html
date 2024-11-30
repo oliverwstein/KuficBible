@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolling Kufic Lines</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .line-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            background: #000;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .viewport {
+            position: absolute;
+            height: 11px; /* Height of each line in the PNG */
+            overflow: hidden;
+            transition: opacity 0.5s ease;
+        }
+
+        .scrolling-content {
+            position: absolute;
+            height: 100%;
+            white-space: nowrap;
+        }
+
+        .scrolling-content img {
+            height: auto;
+            transform: translateY(var(--y-offset));
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #fff;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">Kufic Script Display</h1>
+    <div class="line-container" id="lineContainer"></div>
+
+    <script>
+        class ScrollingLine {
+            constructor(yPosition, lineIndex, speed, container) {
+                this.viewport = document.createElement('div');
+                this.viewport.className = 'viewport';
+                
+                this.content = document.createElement('div');
+                this.content.className = 'scrolling-content';
+                
+                this.img = document.createElement('img');
+                this.img.src = 'kjv.png';
+                this.img.alt = 'Kufic text line';
+                this.img.style.setProperty('--y-offset', `-${lineIndex * 11}px`);
+                
+                this.content.appendChild(this.img);
+                this.viewport.appendChild(this.content);
+                this.viewport.style.top = `${yPosition}px`;
+                
+                this.speed = speed;
+                this.position = 0;
+                this.container = container;
+                this.containerWidth = container.clientWidth;
+                
+                // Calculate opacity based on vertical position
+                const maxY = 600;
+                this.viewport.style.opacity = 1 - (yPosition / maxY) * 0.7;
+                
+                container.appendChild(this.viewport);
+                
+                // Wait for image to load
+                this.img.onload = () => {
+                    this.width = this.img.width;
+                    this.position = 0;
+                };
+            }
+
+            update() {
+                if (!this.width) return;
+                
+                this.position -= this.speed;
+                
+                // Reset position when the whole line has scrolled
+                if (-this.position > this.width) {
+                    this.position = 0;
+                }
+                
+                this.content.style.transform = `translateX(${this.position}px)`;
+            }
+        }
+
+        const container = document.getElementById('lineContainer');
+        const scrollingLines = [];
+        const lineSpacing = 30; // Vertical space between viewports
+        const maxLines = Math.floor((container.clientHeight - 20) / lineSpacing);
+
+        // Create viewport for each line
+        for (let i = 0; i < maxLines; i++) {
+            const speed = 0.5 + (i * 0.15); // Different speed for each line
+            const yPosition = i * lineSpacing;
+            scrollingLines.push(new ScrollingLine(yPosition, i, speed, container));
+        }
+
+        function animate() {
+            scrollingLines.forEach(line => line.update());
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            scrollingLines.forEach(line => {
+                line.containerWidth = container.clientWidth;
+            });
+        });
+    </script>
+</body>
+</html>
